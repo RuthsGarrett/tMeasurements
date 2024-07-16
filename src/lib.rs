@@ -9,7 +9,6 @@ type Float = f32;
 #[cfg(not(use_single_precision))]
 type Float = f64;
 
-mod test;
 
 
 
