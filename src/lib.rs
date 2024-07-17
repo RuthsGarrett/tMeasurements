@@ -9,7 +9,7 @@ type Float = f32;
 #[cfg(not(use_single_precision))]
 type Float = f64;
 
-
+const PI : Float = 3.1415926535897932384626433832795028841971693993751058209;
 
 
 pub struct UnitType<
@@ -85,6 +85,8 @@ pub struct Measurement<U> {
     raw_value: Float,
 }
 
+
+
 impl<U> Add for Measurement<U> {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
@@ -118,6 +120,19 @@ where U : std::ops::Add<_U>
     }
 }
 
+impl<U> Mul<Float> for Measurement<U> 
+{
+    type Output = Measurement<U>;
+
+    fn mul(self, rhs: Float) -> Self::Output {
+        Self::Output {
+            raw_value: { self.raw_value * rhs },
+            _phantom_unit: PhantomData,
+        }
+    }
+}
+
+
 impl<U, _U> Div<Measurement<_U>> for Measurement<U> 
 where U : std::ops::Sub<_U>
 {
@@ -126,6 +141,18 @@ where U : std::ops::Sub<_U>
     fn div(self, rhs: Measurement<_U>) -> Self::Output {
         Self::Output {
             raw_value: { self.raw_value * rhs.raw_value },
+            _phantom_unit: PhantomData,
+        }
+    }
+}
+
+impl<U> Div<Float> for Measurement<U> 
+{
+    type Output = Measurement<U>;
+    
+    fn div(self, rhs: Float) -> Self::Output {
+        Self::Output {
+            raw_value: { self.raw_value / rhs },
             _phantom_unit: PhantomData,
         }
     }
@@ -164,6 +191,7 @@ pub fn add_lengths(left: Length, right: Length) -> Length {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
