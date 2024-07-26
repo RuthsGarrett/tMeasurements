@@ -2,7 +2,7 @@ use std::{
     marker::PhantomData,
     ops::{Add, Div, Mul, Sub},
 };
-use typenum::consts::*;
+use typenum::consts::{N1 ,Z0, P1, P2};
 use typenum::{Diff, Sum};
 
 #[cfg(use_single_precision)]
@@ -311,7 +311,7 @@ mod tests {
         let result = add(2, 2);
         assert_eq!(result, 4);
     }
-
+    //Todo - write real tests
     #[test]
     fn testing() {
         let a = Length::kilometers(0.032);
@@ -332,8 +332,6 @@ mod tests {
         let e = e * e;
         
         assert_eq!(e.get_square_meters(), 4.0);
-
-
 
     }
 }
