@@ -11,7 +11,7 @@ type Float = f32;
 type Float = f64;
 
 //const PI : Float = 3.1415926535897932384626433832795028841971693993751058209;
-
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UnitType<
     T, //Time
     L, //Length
@@ -99,7 +99,7 @@ where
 //Measurement is defined in terms of the 7 base SI units
 // Time, Length, Mass, Current, Temperature, Substance Amount, Luminosity
 //Base Units are Second, Meter, Kilogram, Ampere, Degree Kelvin, Mole, and Candela
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Measurement<U> {
     _phantom_unit: PhantomData<U>, //Unit Type
     raw_value: Float,
@@ -107,21 +107,17 @@ pub struct Measurement<U> {
 
 impl<U> Add for Measurement<U> {
     type Output = Self;
-    fn add(self, rhs: Self) -> Self::Output {
-        Self::Output {
-            raw_value: { self.raw_value + rhs.raw_value },
-            _phantom_unit: PhantomData,
-        }
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.raw_value += rhs.raw_value;
+        self
     }
 }
 
 impl<U> Sub for Measurement<U> {
     type Output = Self;
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self::Output {
-            raw_value: { self.raw_value - rhs.raw_value },
-            _phantom_unit: PhantomData,
-        }
+    fn sub(mut self, rhs: Self) -> Self::Output {
+        self.raw_value -= rhs.raw_value;
+        self
     }
 }
 
@@ -185,14 +181,6 @@ pub type Temperature = Measurement<UnitType<Z0, Z0, Z0, Z0, P1, Z0, Z0>>;
 pub type Amount = Measurement<UnitType<Z0, Z0, Z0, Z0, Z0, P1, Z0>>;
 pub type Luminosity = Measurement<UnitType<Z0, Z0, Z0, Z0, Z0, Z0, P1>>;
 
-macro_rules! scaled_getter {
-    ($func_name:ident, $scalar:expr) => {
-        pub fn $func_name(&self) -> Float {
-            self.raw_value * $scalar
-        }
-    };
-}
-
 #[allow(unused_macros)]
 macro_rules! measurement {
     ($type:ident, $scalar:expr) => {
@@ -203,65 +191,96 @@ macro_rules! measurement {
     };
 }
 
+#[allow(unused_macros)]
+macro_rules! add_scalar {
+    ($func_name:ident, $scalar_name:ident, $scalar_value:expr) => {
+
+        pub const $scalar_name: Float = $scalar_value;
+
+        pub fn $func_name(&self) -> Float {
+            self.raw_value * $scalar_value
+        }
+    };
+}
+
+macro_rules! add_scalar_and_constructor {
+    ($func_name:ident, $scalar_name:ident, $scalar_value:expr, $constructor_name:ident) => {
+        add_scalar!($func_name, $scalar_name, $scalar_value);
+
+        pub fn $constructor_name(raw : Float) -> Self
+        {
+            Self {
+                raw_value: raw / $scalar_value,
+                _phantom_unit: PhantomData,
+            } as Self
+        }
+    };
+}
 
 impl Length 
 {
-    pub const METERS: Float = 1.0;
-    pub const KILOMETERS: Float = 1.0 / 1000.0;
-    pub const FEET: Float = 3.28084;
-    pub const INCHES: Float = 39.37008;
-    
-    scaled_getter!(get_meters, Length::METERS);
-    scaled_getter!(get_kilometers, Length::KILOMETERS);
-    scaled_getter!(get_feet, Length::FEET);
-    scaled_getter!(get_inches, Length::INCHES);   
+    add_scalar_and_constructor!(get_inches, INCHES, 39.37008, inches);
+    add_scalar_and_constructor!(get_feet, FEET, 3.28084, feet);
+    add_scalar_and_constructor!(get_centimeters, CENTIMETERS, 1000.0, centimeters);
+    add_scalar_and_constructor!(get_meters, METERS, 1.0, meters);
+    add_scalar_and_constructor!(get_kilometers, KILOMETERS, 1.0 / 1000.0, kilometers);
+    add_scalar_and_constructor!(get_miles, MILES, 1.0 / 1609.344, miles);
 }
 
 impl Time
 {
-    pub const SECONDS: Float = 1.0;
-    pub const MINUTES: Float = 1.0 / 60.0;
-    pub const HOURS: Float = 1.0 / 3600.0;   
-
-    scaled_getter!(get_seconds, Time::SECONDS);
-    scaled_getter!(get_minutes,  Time::MINUTES );
-    scaled_getter!(get_hours,  Time::HOURS );
+    add_scalar_and_constructor!(get_nanoseconds ,NANOSECONDS, 1000000000.0, nanoseconds);
+    add_scalar_and_constructor!(get_microseconds ,MICROISECONDS, 1000000.0, microseconds);
+    add_scalar_and_constructor!(get_milliseconds ,MILLISECONDS, 1000.0, milliseconds);
+    add_scalar_and_constructor!(get_seconds ,SECONDS, 1.0, seconds);
+    add_scalar_and_constructor!(get_minutes ,MINUTES, 1.0 / 60.0, minutes);
+    add_scalar_and_constructor!(get_hours ,HOURS, 1.0 / 3600.0, hours);
 }
 
 
 impl Area
 {
-
+    add_scalar_and_constructor!(get_square_meters, SQUARE_METERS, 1.0, square_meters);
 }
 
 impl Speed
 {
-    
+    add_scalar_and_constructor!(get_meters_per_second, METERS_PER_SECOND, 1.0, meter_per_second);
+    add_scalar_and_constructor!(get_kilometers_per_hour, KILOMETERS_PER_HOUR, 3.6, kilometers_per_hour);
+    add_scalar_and_constructor!(get_miles_per_hour, MILES_PER_HOUR, 2.237136, miles_per_hour);
+    add_scalar_and_constructor!(get_mach, MACH, 0.002939, mach);
 }
 
 impl Mass
 {
-
+    add_scalar_and_constructor!(get_kilograms, KILOGRAMS, 1.0, kilograms);
+    add_scalar_and_constructor!(get_grams, GRAMS, 1.0/1000.0, grams);
+    add_scalar_and_constructor!(get_pounds, POUNDS, 2.204623, pounds);
+    
 }
-impl Mass 
-{
 
-}
 impl Current 
 {
-
+    add_scalar_and_constructor!(get_ampere, AMPERE, 1.0, ampere);
+    //TODO
 }
+
 impl Temperature 
 {
-
+    add_scalar_and_constructor!(get_kelvin, KELVIN, 1.0, kelvin);
+    //TODO
 }
+
 impl Amount 
 {
-
+    add_scalar_and_constructor!(get_moles, MOLE, 1.0, moles);
+    //TODO
 }
+
 impl Luminosity 
 {
-
+    add_scalar_and_constructor!(get_candela, CANDELA, 1.0, candela);
+    //TODO
 }
 
 
@@ -295,20 +314,26 @@ mod tests {
 
     #[test]
     fn testing() {
-        let a = measurement!(Length, 32.0);
+        let a = Length::kilometers(0.032);
 
-        let b = measurement!(Time, 2.0);
+        let b = Time::seconds(2.0);
 
-        let c: Speed = a / b;
+        let c = a / b;
 
-        assert_eq!(c.raw_value, 16.0);
-
-        let d: Time = Time {
-            raw_value: 16.2,
-            _phantom_unit: PhantomData,
-        };
-
-        assert_eq!(d.get_seconds(), 16.2);
+        assert_eq!(c.get_meters_per_second(), 16.0);
+        
+        let d = Time::milliseconds(16200.0);
+        
+        assert_floats_close!(d.get_seconds(), 16.2);
         assert_floats_close!(d.get_minutes(), 0.27);
+        
+        
+        let e = Length::meters(2.0);
+        let e = e * e;
+        
+        assert_eq!(e.get_square_meters(), 4.0);
+
+
+
     }
 }
